@@ -18,7 +18,12 @@
     </properties>
 
     <modules>
-        <module>Spring-Security-01</module>
+        <module>spring-security-01</module>
+        <module>spring-security-02</module>
+        <module>spring-security-02</module>
+        <module>spring-security-03-oauth2</module>
+        <module>spring-security-04-authorization</module>
+        <module>spring-security-05-authorization2</module>
     </modules>
 
     <dependencyManagement>

@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>转账</title>
+</head>
+<body>
+<form action = "/transfer" method="post">
+    <!-- 隐藏域，获取Spring Security设置的令牌-->
+    <input type="hidden" th:name="${_csrf.getParameterName()}" th:value="${_csrf.getToken()}"/>
+    <input type="text" name="name"/><br/>
+    <input type="submit" value="转账"/>
+</form>
+</body>
+</html>

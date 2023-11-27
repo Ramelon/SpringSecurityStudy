@@ -1,0 +1,77 @@
+spring:
+  security:
+    oauth2:
+      # OAuth2 客户端配置
+      client:
+        # 基础属性前缀
+        registration:
+          # OAuth2服务提供商标识符（由当前项目定义）
+          github:
+            # 申请的客户端ID
+            client-id: efe4e0fe20feff3cd6c7
+            # 申请的客户端密码
+            client-secret: 0c89e911f21b143f0ade2397410012f0841549ca
+          gitee:
+            client-name: 码云登录
+            # 申请的客户端ID
+            client-id: e96c4d8bfe6cd333f563f256875d4a26b7c3e40f2ceb535f96ffca48bfba3aa0
+            # 申请的客户端密码
+            client-secret: ad5ab201f474f27aefce33965afd32103e61279cfefd93876d7db995db9404e4
+            # 授权模式，固定为 authorization_code，其他值可以参考AuthorizationGrantType
+            authorization-grant-type: authorization_code
+            # 回调地址，接收授权码
+            redirect-uri: http://localhost:8089/login/oauth2/code/gitee
+            # 权限范围，可配置项在码云应用信息中查看
+            scope:
+              - user_info # 个人用户信息
+              - projects # 查看、创建、更新用户的项目
+        provider:
+          gitee:
+            # 申请授权地址
+            authorization-uri: https://gitee.com/oauth/authorize
+            # 获取访问令牌地址
+            token-uri: https://gitee.com/oauth/token
+            # 查询用户信息地址
+            user-info-uri: https://gitee.com/api/v5/user
+            # 码云用户信息中的用户名字段
+            user-name-attribute: id
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    url: jdbc:mysql://127.0.0.1:13306/spring_security?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: 123456
+    druid:
+      initial-size: 5                                       # 初始化大小
+      min-idle: 10                                          # 最小连接数
+      max-active: 20                                        # 最大连接数
+      max-wait: 60000                                       # 获取连接时的最大等待时间
+      min-evictable-idle-time-millis: 300000                # 一个连接在池中最小生存的时间，单位是毫秒
+      time-between-eviction-runs-millis: 60000              # 多久才进行一次检测需要关闭的空闲连接，单位是毫秒
+      filters: stat                                         # 配置扩展插件：stat-监控统计，log4j-日志，wall-防火墙（防止SQL注入），去掉后，监控界面的sql无法统计   ,wall
+      validation-query: SELECT 1                            # 检测连接是否有效的 SQL语句，为空时以下三个配置均无效
+      test-on-borrow: true                                  # 申请连接时执行validationQuery检测连接是否有效，默认true，开启后会降低性能
+      test-on-return: true                                  # 归还连接时执行validationQuery检测连接是否有效，默认false，开启后会降低性能
+      test-while-idle: true                                 # 申请连接时如果空闲时间大于timeBetweenEvictionRunsMillis，执行validationQuery检测连接是否有效，默认false，建议开启，不影响性能
+      stat-view-servlet:
+        enabled: true                                       # 是否开启 StatViewServlet
+        allow: 127.0.0.1                                    # 访问监控页面 白名单，默认127.0.0.1
+        deny: 192.168.56.1                                  # 访问监控页面 黑名单
+        login-username: admin                               # 访问监控页面 登陆账号
+        login-password: admin                               # 访问监控页面 登陆密码
+      filter:
+        stat:
+          enabled: true                                     # 是否开启 FilterStat，默认true
+          log-slow-sql: true                                # 是否开启 慢SQL 记录，默认false
+          slow-sql-millis: 5000                             # 慢 SQL 的标准，默认 3000，单位：毫秒
+          merge-sql: false                                  # 合并多个连接池的监控数据，默认false
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      password:
+      database: 0
+
+server:
+  port: 8089
+
