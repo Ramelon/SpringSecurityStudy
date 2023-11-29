@@ -24,6 +24,9 @@
         <module>spring-security-03-oauth2</module>
         <module>spring-security-04-authorization</module>
         <module>spring-security-05-authorization2</module>
+        <module>spring-security-06-jjwt</module>
+        <module>spring-security-07-source</module>
+        <module>spring-security-08-project01</module>
     </modules>
 
     <dependencyManagement>
