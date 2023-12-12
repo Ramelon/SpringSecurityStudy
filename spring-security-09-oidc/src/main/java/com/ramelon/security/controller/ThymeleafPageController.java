@@ -44,6 +44,8 @@ public class ThymeleafPageController {
         }
         Map<String, String> scopeMap = new HashMap<>();
         scopeMap.put("user_info", "用户基础信息");
+        //scopeMap.put("email", "邮箱");
+        //  scopeMap.put("openid", "openid");
         // 3. 设置属性，页面获取
         model.addAttribute("clientName", client.getClientName());// 客户端名称
         model.addAttribute("scopeMap", scopeMap);

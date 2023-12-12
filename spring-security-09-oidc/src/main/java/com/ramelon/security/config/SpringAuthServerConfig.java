@@ -1,6 +1,12 @@
 package com.ramelon.security.config;
 
+import com.ramelon.security.converter.RamelonAuthenticationConverter;
+import com.ramelon.security.handle.JsonAuthenticationFailureHandler;
+import com.ramelon.security.handle.JsonAuthenticationSuccessHandler;
+import com.ramelon.security.handle.TokenEndpointAuthenticationFailureHandler;
+import com.ramelon.security.handle.TokenEndpointAuthenticationSuccessHandler;
 import com.ramelon.security.service.OidcUserInfoService;
+import com.ramelon.security.validator.CustomValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -8,6 +14,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -19,6 +26,11 @@ import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.security.oauth2.core.oidc.endpoint.OidcParameterNames;
+import org.springframework.security.oauth2.server.authorization.JdbcOAuth2AuthorizationConsentService;
+import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsentService;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationCodeRequestAuthenticationContext;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationCodeRequestAuthenticationProvider;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationCodeRequestAuthenticationValidator;
 import org.springframework.security.oauth2.server.authorization.client.JdbcRegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
@@ -32,11 +44,14 @@ import org.springframework.security.oauth2.server.authorization.token.OAuth2Toke
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationConverter;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -53,10 +68,18 @@ public class SpringAuthServerConfig {
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE)
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
-        // http://localhost:8080/oauth2/authorize?client_id=client&scope=openid email&state=123456&response_type=code&redirect_uri=http://127.0.0.1:8080/callback
+        // http://localhost:8091/oauth2/authorize?client_id=client&scope=openid email&state=123456&response_type=code&redirect_uri=http://127.0.0.1:8091/callback
         // 授权服务器配置类
         OAuth2AuthorizationServerConfigurer authorizationServerConfigurer = new OAuth2AuthorizationServerConfigurer();
-        authorizationServerConfigurer.authorizationEndpoint(endpoint -> endpoint.consentPage("/oauth2/consent"));
+        authorizationServerConfigurer.authorizationEndpoint(endpoint -> endpoint
+                .authorizationRequestConverters(authorizationRequestConvertersConsumer())
+                .authenticationProviders(configureAuthenticationValidator())
+                .authorizationResponseHandler(new JsonAuthenticationSuccessHandler())
+                .errorResponseHandler(new JsonAuthenticationFailureHandler())
+                .consentPage("/oauth2/consent"));
+        authorizationServerConfigurer.tokenEndpoint(tokenEndpoint -> tokenEndpoint
+                .accessTokenResponseHandler(new TokenEndpointAuthenticationSuccessHandler())
+                .errorResponseHandler(new TokenEndpointAuthenticationFailureHandler()));
         RequestMatcher endpointsMatcher = authorizationServerConfigurer.getEndpointsMatcher();
         // 创建用户信息映射器
         Function<OidcUserInfoAuthenticationContext, OidcUserInfo> userInfoMapper = (context) -> {
@@ -78,6 +101,36 @@ public class SpringAuthServerConfig {
                 .apply(authorizationServerConfigurer);
         return http.build();
     }
+
+    /**
+     * 请求转换器
+     * @return
+     */
+    private  Consumer<List<AuthenticationConverter>> authorizationRequestConvertersConsumer(){
+        return (authorizationRequestConverters) -> {
+            authorizationRequestConverters.add(new RamelonAuthenticationConverter());
+        };
+    }
+
+
+    /**
+     * 自定义校验器
+     * @return
+     */
+    private Consumer<List<AuthenticationProvider>> configureAuthenticationValidator() {
+        return (authenticationProviders) ->
+                authenticationProviders.forEach((authenticationProvider) -> {
+                    if (authenticationProvider instanceof OAuth2AuthorizationCodeRequestAuthenticationProvider) {
+                        Consumer<OAuth2AuthorizationCodeRequestAuthenticationContext> authenticationValidator =
+                                new CustomValidator()
+                                        .andThen(OAuth2AuthorizationCodeRequestAuthenticationValidator.DEFAULT_SCOPE_VALIDATOR);
+
+                        ((OAuth2AuthorizationCodeRequestAuthenticationProvider) authenticationProvider)
+                                .setAuthenticationValidator(authenticationValidator);
+                    }
+                });
+    }
+
 
     /**
      * 客户端配置，基于数据库存储
@@ -135,6 +188,14 @@ public class SpringAuthServerConfig {
                         claims.putAll(userInfo.getClaims()));
             }
         };
+    }
+
+    /**
+     * 基于数据库存储用户、客户端授权关联信息
+     */
+    @Bean
+    public OAuth2AuthorizationConsentService authorizationConsentService(JdbcTemplate jdbcTemplate, RegisteredClientRepository clientRepository){
+        return new JdbcOAuth2AuthorizationConsentService(jdbcTemplate, clientRepository);
     }
 
 }
