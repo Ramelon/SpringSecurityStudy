@@ -28,6 +28,7 @@
         <module>spring-security-07-source</module>
         <module>spring-security-08-project01</module>
         <module>spring-security-09-oidc</module>
+        <module>spring-security-10-cloud</module>
     </modules>
 
     <dependencyManagement>

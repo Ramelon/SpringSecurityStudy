@@ -1,5 +1,7 @@
 package org.ramelon.security;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.web.servlet.filter.OrderedRequestContextFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
@@ -14,6 +16,8 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.expression.WebExpressionAuthorizationManager;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import org.springframework.web.context.request.RequestContextListener;
+import org.springframework.web.filter.RequestContextFilter;
 
 /**
  * @description:
@@ -51,4 +55,11 @@ public class WebSecurityConfig {
         detailsManager.createUser(User.withUsername("user").password("{noop}123456").roles("USER").build());
         return detailsManager;
     }
+
+    @Bean
+    @ConditionalOnMissingBean({ RequestContextListener.class, RequestContextFilter.class })
+    RequestContextFilter requestContextFilter() {
+        return new OrderedRequestContextFilter();
+    }
+
 }

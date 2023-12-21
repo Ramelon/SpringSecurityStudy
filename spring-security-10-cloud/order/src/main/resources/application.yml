@@ -1,0 +1,6 @@
+spring:
+  data:
+    redis:
+      password:
+  session:
+    timeout: 2H
